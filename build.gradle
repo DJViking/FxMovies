@@ -1,11 +1,18 @@
+import java.time.format.DateTimeFormatter
+import java.time.ZoneId
 
 plugins {
-  id 'java'
-  id 'eclipse'
-  id 'application'
+    id 'java'
+    id 'eclipse'
+    id 'application'
+    id 'jacoco'
 }
 
 eclipse {
+    project {
+        natures 'org.eclipse.buildship.core.gradleprojectnature'
+    }
+
     classpath {
         file {
             whenMerged {
@@ -34,7 +41,7 @@ boolean isTestScope(entry) { return entry.entryAttributes.get('gradle_used_by_sc
 boolean isModule(entry) { isLibrary(entry) && !isTestScope(entry); }
 boolean isSource(entry) { return entry.properties.kind.equals('src'); }
 
-group = 'no.smeaworks'
+group = project.vendor
 version = '1.0-SNAPSHOT'
 
 description = """Movies"""
@@ -45,30 +52,65 @@ applicationDefaultJvmArgs = [ "-Djdk.gtk.verbose=true", "-Djdk.gtk.version=3" ]
 sourceCompatibility = 10
 targetCompatibility = 10
 
+final Date date = new Date()
+final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss")
 ext {
+    buildDateTime = date.toInstant().atZone(ZoneId.systemDefault()).format(formatter);
+
+    buildRelease = project.hasProperty("release")
+    if (!buildRelease) {
+        project.version = project.version + "-SNAPSHOT"
+    }
+
     moduleName = 'no.smeaworks.movies'
 }
 
 repositories {
-     mavenLocal()
-     mavenCentral()
+    jcenter()
 }
 
-final def junit5Group = 'org.junit.jupiter'
-final def junit5Version = '5.2.0'
+final def log4jGroup = 'org.apache.logging.log4j'
+final def log4jVersion = '2.11.1'
+
+final def junitJupiterGroup = 'org.junit.jupiter'
+final def junitJupiterVersion = '5.2.0'
+
+final def junitPlatformGroup = 'org.junit.platform'
+final def junitPlatformVersion = '1.2.0'
 dependencies {
     compile group: 'org.controlsfx', name: 'controlsfx', version: '9.0.0'
     compile group: 'com.jfoenix', name: 'jfoenix', version: '9.0.4'
     compile group: 'org.jfxtras', name: 'jfxtras-controls', version: '9.0-r1'
 
-    testCompile group: junit5Group, name: 'junit-jupiter-api', version: junit5Version
-    testRuntime group: junit5Group, name: 'junit-jupiter-engine', version: junit5Version
+    compile group: log4jGroup, name: 'log4j-api', version: log4jVersion
+    compile group: log4jGroup, name: 'log4j-core', version: log4jVersion
+    compile group: 'com.lmax', name: 'disruptor', version:'3.3.7'
+
+    testCompile group: junitJupiterGroup, name: 'junit-jupiter-api', version: junitJupiterVersion
+    testRuntime group: junitJupiterGroup, name: 'junit-jupiter-engine', version: junitJupiterVersion
+
+    testRuntimeOnly group: junitPlatformGroup, name: 'junit-platform-launcher', version: junitPlatformVersion
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+artifacts {
+    archives jar
+    archives sourcesJar
+    archives javadocJar
 }
 
 compileJava {
     inputs.property("moduleName", moduleName)
     doFirst {
-        println classpath.asPath
         options.compilerArgs = [
             '--module-path', classpath.asPath,
         ]
@@ -89,6 +131,22 @@ compileTestJava {
     }
 }
 
+javadoc {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        options.addStringOption('-module-path', classpath.asPath)
+        options.addStringOption('-class-path', "")
+        options.addBooleanOption('html5', true)
+        options.addBooleanOption('verbose', true)
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled true
+    }
+}
+
 test {
     useJUnitPlatform()
 
@@ -105,6 +163,20 @@ test {
 
 jar {
     manifest {
-        attributes("Main-Class": mainClassName)
+        attributes(
+            'Implementation-Title': project.name,
+            'Implementation-Version': project.version,
+            'Implementation-Vendor': project.vendor,
+            'Implementation-Vendor-Id': project.group,
+            'Specification-Title': project.name,
+            'Specification-Version': project.version,
+            'Specification-Vendor': project.vendor,
+            "Main-Class": mainClassName,
+            'Built-By': System.getProperty('user.name'),
+            'Build-Time': buildDateTime,
+            'Created-By': System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")",
+            'Permissions': 'all-permissions',
+            'Codebase': '*'
+        )
     }
 }
