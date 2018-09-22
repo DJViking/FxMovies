@@ -49,9 +49,6 @@ description = """Movies"""
 mainClassName = 'no.smeaworks.movies.MoviesApplication'
 applicationDefaultJvmArgs = [ ]
 
-sourceCompatibility = 11
-targetCompatibility = 11
-
 final Date date = new Date()
 final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss")
 ext {

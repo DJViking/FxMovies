@@ -32,6 +32,8 @@ public class MoviesApplication extends Application {
         logger.log(Level.INFO, "Start application");
 
         Scene scene = new Scene(root, 400, 400);
+        scene.getStylesheets().add(getClass().getResource("root.css").toExternalForm());
+
         primaryStage.setScene(scene);
         primaryStage.show();
     }
