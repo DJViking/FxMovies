@@ -1,9 +1,13 @@
+/**
+ * 
+ */
 module no.smeaworks.movies {
 
     requires javafx.controls;
     requires javafx.fxml;
     requires javafx.web;
     requires javafx.graphics;
+    requires javafx.media;
 
     /* Named modules */
     requires jfxtras.controls;
