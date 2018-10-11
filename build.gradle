@@ -8,46 +8,13 @@ plugins {
     //id 'jacoco'
 }
 
-eclipse {
-    project {
-        natures 'org.eclipse.buildship.core.gradleprojectnature'
-    }
-
-    classpath {
-        file {
-            whenMerged {
-                entries.findAll { isModule(it) }.each { //(1)
-                    it.entryAttributes['module'] = 'true'
-                }
-
-                entries.findAll { isSource(it) && isTestScope(it) }.each {
-                    it.entryAttributes['test'] = 'true'
-                }
-
-                entries.findAll { isLibrary(it) && isTestScope(it) }.each {
-                    it.entryAttributes['test'] = 'true'
-                }
-            }
-        }
-
-        defaultOutputDir = file('build')
-        downloadSources = true
-        downloadJavadoc = true
-    }
-}
-
-boolean isLibrary(entry) { return entry.properties.kind.equals('lib') }
-boolean isTestScope(entry) { return entry.entryAttributes.get('gradle_used_by_scope').equals('test'); }
-boolean isModule(entry) { isLibrary(entry) && !isTestScope(entry); }
-boolean isSource(entry) { return entry.properties.kind.equals('src'); }
-
 group = project.vendor
-version = '1.0-SNAPSHOT'
+version = '1.0.0'
 
 description = """Movies"""
 
 mainClassName = 'no.smeaworks.movies.MoviesApplication'
-applicationDefaultJvmArgs = [ ]
+applicationDefaultJvmArgs = [ "-Djdk.gtk.verbose=true", "-Dprism.verbose=true" ]
 
 final Date date = new Date()
 final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss")
@@ -92,10 +59,6 @@ dependencies {
     compile group: "org.openjfx", name: "javafx-web", version: "11", classifier: platform
     compile group: "org.openjfx", name: "javafx-fxml", version: "11", classifier: platform
 
-    compile group: 'org.controlsfx', name: 'controlsfx', version: '9.0.0'
-    compile group: 'com.jfoenix', name: 'jfoenix', version: '9.0.4'
-    compile group: 'org.jfxtras', name: 'jfxtras-controls', version: '9.0-r1'
-
     compile group: log4jGroup, name: 'log4j-api', version: log4jVersion
     compile group: log4jGroup, name: 'log4j-core', version: log4jVersion
     compile group: 'com.lmax', name: 'disruptor', version:'3.3.7'
@@ -104,6 +67,10 @@ dependencies {
     testRuntime group: junitJupiterGroup, name: 'junit-jupiter-engine', version: junitJupiterVersion
 
     testRuntimeOnly group: junitPlatformGroup, name: 'junit-platform-launcher', version: junitPlatformVersion
+
+    testCompile group: "org.testfx", name: "testfx-core", version: "4.0.14-alpha"
+    testCompile group: "org.testfx", name: "testfx-junit5", version: "4.0.14-alpha"
+    testCompile group: "org.testfx", name: "openjfx-monocle", version: "jdk-11+26"
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
@@ -130,81 +97,8 @@ jacocoTestReport {
 }
 */
 
-compileJava {
-    inputs.property("moduleName", moduleName)
-    doFirst {
-        options.compilerArgs = [
-            '--module-path', classpath.asPath,
-            '--add-modules', 'javafx.controls',
-            '--add-modules', 'javafx.fxml',
-            '--add-modules', 'javafx.web',
-            '--add-modules', 'javafx.graphics',
-            '--add-modules', 'javafx.media'
-        ]
-        classpath = files()
-    }
-}
-
-compileTestJava {
-    inputs.property("moduleName", moduleName)
-    doFirst {
-        options.compilerArgs = [
-            '--module-path', classpath.asPath,
-            '--add-modules', 'javafx.controls',
-            '--add-modules', 'javafx.fxml',
-            '--add-modules', 'javafx.web',
-            '--add-modules', 'javafx.graphics',
-            '--add-modules', 'javafx.media',
-            '--add-modules', 'org.junit.jupiter.api',
-            '--add-reads', "$moduleName=org.junit.jupiter.api",
-            '--patch-module', "$moduleName=" + files(sourceSets.test.java.srcDirs).asPath,
-        ]
-        classpath = files()
-    }
-}
-
-run {
-    doFirst {
-        jvmArgs = [
-                '--module-path', classpath.asPath,
-                '--add-modules', 'javafx.controls',
-                '--add-modules', 'javafx.fxml',
-                '--add-modules', 'javafx.web',
-                '--add-modules', 'javafx.graphics',
-                '--add-modules', 'javafx.media'
-        ]
-    }
-}
-
-javadoc {
-    inputs.property("moduleName", moduleName)
-    doFirst {
-        exclude "**/module-info.java"
-        options.addStringOption('-module-path', classpath.asPath)
-        options.addStringOption('-add-modules', 'javafx.controls')
-        options.addStringOption('-add-modules', 'javafx.fxml')
-        options.addStringOption('-add-modules', 'javafx.web')
-        options.addStringOption('-add-modules', 'javafx.graphics')
-        options.addStringOption('-add-modules', 'javafx.media')
-        options.addStringOption('-class-path', "")
-        options.addBooleanOption('html5', true)
-        options.addBooleanOption('verbose', true)
-    }
-}
-
 test {
     useJUnitPlatform()
-
-    doFirst {
-        jvmArgs = [
-            '--module-path', classpath.asPath,
-            '--add-modules', 'javafx.controls',
-            '--add-modules', 'javafx.fxml',
-            '--add-modules', 'javafx.web',
-            '--add-modules', 'javafx.graphics',
-            '--add-modules', 'javafx.media'
-        ]
-    }
 
     reports {
         html.enabled = true
@@ -230,3 +124,5 @@ jar {
         )
     }
 }
+
+apply from: 'modules.gradle'
