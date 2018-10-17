@@ -5,16 +5,10 @@ plugins {
     id 'java'
     id 'eclipse'
     id 'application'
-    //id 'jacoco'
+    id "com.diffplug.gradle.spotless" version "3.15.0"
 }
 
-group = project.vendor
-version = '1.0.0'
-
-description = """Movies"""
-
 mainClassName = 'no.smeaworks.movies.MoviesApplication'
-applicationDefaultJvmArgs = [ "-Djdk.gtk.verbose=true", "-Dprism.verbose=true" ]
 
 final Date date = new Date()
 final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss")
@@ -73,6 +67,28 @@ dependencies {
     testCompile group: "org.testfx", name: "openjfx-monocle", version: "jdk-11+26"
 }
 
+jar {
+    doFirst {
+        manifest {
+            attributes(
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version,
+                'Implementation-Vendor': project.group,
+                'Specification-Title': project.name,
+                'Specification-Version': project.version,
+                'Specification-Vendor': project.group,
+                "Main-Class": mainClassName,
+                'Built-By': System.getProperty('user.name'),
+                'Build-Time': buildDateTime,
+                'Created-By': System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")",
+                'Permissions': 'all-permissions',
+                'Codebase': '*'
+            )
+        }
+    }
+}
+
+
 task sourcesJar(type: Jar, dependsOn: classes) {
     classifier = 'sources'
     from sourceSets.main.allSource
@@ -89,14 +105,6 @@ artifacts {
     archives javadocJar
 }
 
-/*
-jacocoTestReport {
-    reports {
-        xml.enabled true
-    }
-}
-*/
-
 test {
     useJUnitPlatform()
 
@@ -105,24 +113,5 @@ test {
     }
 }
 
-jar {
-    manifest {
-        attributes(
-            'Implementation-Title': project.name,
-            'Implementation-Version': project.version,
-            'Implementation-Vendor': project.vendor,
-            'Implementation-Vendor-Id': project.group,
-            'Specification-Title': project.name,
-            'Specification-Version': project.version,
-            'Specification-Vendor': project.vendor,
-            "Main-Class": mainClassName,
-            'Built-By': System.getProperty('user.name'),
-            'Build-Time': buildDateTime,
-            'Created-By': System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")",
-            'Permissions': 'all-permissions',
-            'Codebase': '*'
-        )
-    }
-}
-
-apply from: 'modules.gradle'
+apply from: rootProject.file('spotless.gradle')
+apply from: rootProject.file('modules.gradle')

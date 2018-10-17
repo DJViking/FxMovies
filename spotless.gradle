@@ -1,0 +1,29 @@
+spotless {
+    enforceCheck false
+
+    java {
+        importOrderFile 'config/spotless/spotless.importorder'
+        eclipse().configFile 'config/spotless/spotless.eclipseformat.xml'
+
+        removeUnusedImports()
+        indentWithSpaces()
+        trimTrailingWhitespace()
+        endWithNewline()
+
+        custom 'Lambda fix', { it.replace('} )', '})').replace('} ,', '},') }
+    }
+
+    xml {
+        indentWithSpaces(4)
+    }
+
+    format 'styling', {
+        target '**/*.css'
+
+        prettier().config([
+            'parser': 'css',
+            'tabWidth': '4',
+            'printWidth': '100'
+        ])
+    }
+}
