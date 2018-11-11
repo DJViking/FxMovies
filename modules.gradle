@@ -65,19 +65,6 @@ compileTestJava {
     }
 }
 
-run {
-    doFirst {
-        jvmArgs = [
-                '--module-path', classpath.asPath,
-                '--add-modules', 'javafx.controls',
-                '--add-modules', 'javafx.fxml',
-                '--add-modules', 'javafx.web',
-                '--add-modules', 'javafx.graphics',
-                '--add-modules', 'javafx.media'
-        ]
-    }
-}
-
 javadoc {
     inputs.property("moduleName", moduleName)
     doFirst {
@@ -95,6 +82,21 @@ javadoc {
 }
 
 test {
+    inputs.property("moduleName", moduleName)
+    doFirst {
+        jvmArgs = [
+            '--module-path', classpath.asPath,
+            '--add-modules', 'javafx.controls',
+            '--add-modules', 'javafx.fxml',
+            '--add-modules', 'javafx.web',
+            '--add-modules', 'javafx.graphics',
+            '--add-modules', 'javafx.media'
+        ]
+    }
+}
+
+run {
+    inputs.property("moduleName", moduleName)
     doFirst {
         jvmArgs = [
             '--module-path', classpath.asPath,
