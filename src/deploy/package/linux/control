@@ -1,0 +1,9 @@
+Package: movies
+Version: 1.0.0-1
+Section: unknown
+Maintainer: Smeaworks Inc <sverre.moe@gmail.com>
+Priority: optional
+Architecture: amd64
+Provides: movies
+Description: Movies
+

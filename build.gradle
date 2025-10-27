@@ -1,25 +1,21 @@
 import java.time.format.DateTimeFormatter
 import java.time.ZoneId
-import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
     id 'java'
-    id 'eclipse'
+    id 'idea'
     id 'application'
-    id 'checkstyle'
-    id 'jacoco'
-    id "com.diffplug.gradle.spotless" version "3.15.0"
-    id 'org.openjfx.javafxplugin' version '0.0.7'
+    id 'org.openjfx.javafxplugin' version '0.1.0'
 }
 
-apply(from: rootProject.file('eclipse.gradle'))
-apply(from: rootProject.file('spotless.gradle'))
-
-final Date date = new Date()
+final def date = new Date()
 final def buildDateFormatter = DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm:ss")
 final def releaseFormatter = DateTimeFormatter.ofPattern("yyyMMddHHmmss")
 ext {
     buildDateTime = date.toInstant().atZone(ZoneId.systemDefault()).format(buildDateFormatter);
+    userName = System.properties['user.name']
+    userHome = System.properties['user.home']
+    createdBy = System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")"
 
     applicationVersion = project.version
     applicationRelease = "1"
@@ -35,49 +31,55 @@ ext {
     }
 }
 
-mainClassName = "$moduleName/no.smeaworks.movies.MoviesApplication"
+dependencies {
+    implementation(group: 'org.glassfish.jaxb', name: 'jaxb-runtime', version: '2.3.2')
+    implementation(group: 'com.opencsv', name: 'opencsv', version: '4.4')
+
+    testImplementation(group: junitJupiterGroup, name: 'junit-jupiter-api', version: junitJupiterVersion)
+    testImplementation(group: junitJupiterGroup, name: 'junit-jupiter-engine', version: junitJupiterVersion)
+    testImplementation(group: junitJupiterGroup, name: 'junit-jupiter-params', version: junitJupiterVersion)
+
+    testRuntimeOnly(group: junitPlatformGroup, name: 'junit-platform-launcher', version: junitPlatformVersion)
+    testRuntimeOnly(group: junitPlatformGroup, name: 'junit-platform-runner', version: junitPlatformVersion)
+
+    testImplementation(group: textfxGroup, name: "testfx-core", version: textfxVersion)
+    testImplementation(group: textfxGroup, name: "testfx-junit5", version: textfxVersion)
+
+    testImplementation(group: mockitoGroup, name: 'mockito-core', version: mockitoVersion)
+    testImplementation(group: mockitoGroup, name: 'mockito-junit-jupiter', version: mockitoVersion)
+    testImplementation(group: 'org.hamcrest', name: 'hamcrest', version: '2.2')
+}
 
 repositories {
     mavenCentral()
 }
 
-javafx {
-    version = "11.0.+"
+application {
+    mainModule = 'no.smeaworks.movies'
+    mainClass = "no.smeaworks.movies.MoviesApplication"
+}
 
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+    withJavadocJar()
+    withSourcesJar()
+    modularity.inferModulePath.set(true)
+}
+
+javafx {
+    version = '25'
     modules = [
-        'javafx.graphics',
-        'javafx.controls',
-        'javafx.media',
-        'javafx.web',
-        'javafx.fxml'
+        "javafx.controls",
+        "javafx.web",
+        "javafx.media",
+        "javafx.fxml"
     ]
 }
 
-final def log4jGroup = 'org.apache.logging.log4j'
-final def log4jVersion = '2.11.2'
-
-final def junitJupiterGroup = 'org.junit.jupiter'
-final def junitJupiterVersion = '5.4.0'
-
-final def junitPlatformGroup = 'org.junit.platform'
-final def junitPlatformVersion = '1.4.0'
-
-final def textfxGroup = "org.testfx"
-final def textfxVersion = "4.0.15-alpha"
-dependencies {
-    implementation(group: log4jGroup, name: 'log4j-api', version: log4jVersion)
-    implementation(group: log4jGroup, name: 'log4j-core', version: log4jVersion)
-    implementation(group: 'com.lmax', name: 'disruptor', version:'3.3.7')
-
-    testImplementation(group: junitJupiterGroup, name: 'junit-jupiter-api', version: junitJupiterVersion)
-    testRuntimeOnly(group: junitJupiterGroup, name: 'junit-jupiter-engine', version: junitJupiterVersion)
-    testRuntimeOnly(group: junitJupiterGroup, name: 'junit-jupiter-params', version: junitJupiterVersion)
-
-    testRuntimeOnly(group: junitPlatformGroup, name: 'junit-platform-launcher', version: junitPlatformVersion)
-
-    testImplementation(group: textfxGroup, name: "testfx-core", version: textfxVersion)
-    testImplementation(group: textfxGroup, name: "testfx-junit5", version: textfxVersion)
-    testImplementation(group: textfxGroup, name: "openjfx-monocle", version: "jdk-11+26")
+javadoc {
+    //exclude 'no/smeaworks/movies/jaxb/**'
 }
 
 jar {
@@ -90,10 +92,11 @@ jar {
                 'Specification-Title': project.name,
                 'Specification-Version': project.version,
                 'Specification-Vendor': project.group,
-                "Main-Class": mainClassName,
-                'Built-By': System.getProperty('user.name'),
+                'Application-Name': applicationName,
+                "Main-Class": application.mainClass,
+                'Built-By': userName,
                 'Build-Time': buildDateTime,
-                'Created-By': System.properties['java.version'] + " (" + System.properties['java.vendor'] + " " + System.properties['java.vm.version'] + ")",
+                'Created-By': createdBy,
                 'Permissions': 'all-permissions',
                 'Codebase': '*'
             )
@@ -103,75 +106,4 @@ jar {
 
 test {
     useJUnitPlatform()
-
-    reports {
-        html.enabled = true
-    }
-}
-
-checkstyle {
-    toolVersion '8.14'
-}
-
-jacoco {
-    toolVersion = "0.8.2"
-}
-
-jacocoTestReport {
-    reports {
-        xml.enabled true
-    }
-}
-
-task processPackageResources(type: Copy) {
-    into("${buildDir}/package")
-
-    from ('src/main/package') {
-        include "**/*.png"
-    }
-
-    from ('src/main/package') {
-        exclude "**/*.png"
-        filter ReplaceTokens, tokens: [
-            projectName: project.name,
-            projectVersion: project.version,
-            projectDescription: project.description,
-            applicationName: applicationName,
-            applicationVersion: applicationVersion,
-            applicationRelease: applicationRelease
-        ]
-    }
-}
-tasks.processResources.finalizedBy("processPackageResources")
-
-task createRuntime(type: Exec) {
-    dependsOn installDist
-
-    inputs.dir(installDist.outputs.files.singleFile)
-    outputs.dir("${buildDir}/runtime")
-
-    doFirst {
-        delete "${buildDir}/runtime"
-    }
-
-    def libDir = new File(installDist.outputs.files.singleFile, "lib").path
-
-    commandLine 'jlink',
-        '--module-path', "/usr/java/jdk-11/jmods:${libDir}",
-        '--add-modules', 'no.smeaworks.movies',
-        '--output', "${buildDir}/runtime"
-}
-
-task createPackage(type: Exec) {
-    dependsOn createRuntime
-
-    commandLine 'jpackage', 'create-installer',
-        '--verbose',
-        '--force',
-        '--name', project.name,
-        '--app-version', applicationVersion,
-        '--module', "${mainClassName}",
-        '--resource-dir', "${buildDir}/package",
-        '--runtime-image', "${buildDir}/runtime",
-        '--output', "${buildDir}/native"
 }

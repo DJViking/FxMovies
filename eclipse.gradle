@@ -6,7 +6,7 @@ eclipse {
     classpath {
         file {
             whenMerged {
-                entries.findAll { isModule(it) }.each { //(1)
+                entries.findAll { isModule(it) }.each {
                     it.entryAttributes['module'] = 'true'
                 }
 
